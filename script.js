@@ -17,8 +17,8 @@ function setRepairHistory(history) {
 }
 
 // ⬇️ Вставь свой реальный URL ниже
-const sheetURL =     "https://script.google.com/macros/s/AKfycbyIkivFze3mkNaKszIUSzR_wLtpbaIsdSj5i1CyYrmckPbotBXnZurtnZBZECAxhecJ/exec";
-const sheetCarsURL = "https://script.google.com/macros/s/AKfycbyIkivFze3mkNaKszIUSzR_wLtpbaIsdSj5i1CyYrmckPbotBXnZurtnZBZECAxhecJ/exec";
+const sheetURL =     "https://script.google.com/macros/s/AKfycbwfJgyK4evmzFaxhTLlylUUGM1uOjNxoE5ofGBQrn_czRAOylxIMcIz2cRZHfCztRQY/exec";
+const sheetCarsURL = "https://script.google.com/macros/s/AKfycbwfJgyK4evmzFaxhTLlylUUGM1uOjNxoE5ofGBQrn_czRAOylxIMcIz2cRZHfCztRQY/exec";
 // --- ФУНКЦІЇ ДЛЯ index.html --- //
 
 async function populateCarSelect(){
