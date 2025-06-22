@@ -17,24 +17,31 @@ function setRepairHistory(history) {
 }
 
 // ⬇️ Вставь свой реальный URL ниже
-const sheetURL = "https://script.google.com/macros/s/AKfycbyIkivFze3mkNaKszIUSzR_wLtpbaIsdSj5i1CyYrmckPbotBXnZurtnZBZECAxhecJ/exec";
-
+const sheetURL =     "https://script.google.com/macros/s/AKfycbyIkivFze3mkNaKszIUSzR_wLtpbaIsdSj5i1CyYrmckPbotBXnZurtnZBZECAxhecJ/exec";
+const sheetCarsURL = "https://script.google.com/macros/s/AKfycbyIkivFze3mkNaKszIUSzR_wLtpbaIsdSj5i1CyYrmckPbotBXnZurtnZBZECAxhecJ/exec";
 // --- ФУНКЦІЇ ДЛЯ index.html --- //
 
-function populateCarSelect() {
+async function populateCarSelect() {
   const select = document.getElementById("car-select");
   if (!select) return;
 
-  const links = getCarLinks();
-  select.innerHTML = '<option value="">-- Оберіть авто --</option>';
+  try {
+    const links = await fetchCarLinksFromSheet(); // ждём загрузки из Google Sheets
+    select.innerHTML = '<option value="">-- Оберіть авто --</option>';
 
-  links.forEach(link => {
-    const option = document.createElement("option");
-    option.value = link.car;
-    option.textContent = link.car;
-    select.appendChild(option);
-  });
+    links.forEach(link => {
+      const option = document.createElement("option");
+      option.value = link.car;
+      option.textContent = link.car;
+      select.appendChild(option);
+    });
+  } catch (err) {
+    console.error("Не вдалося завантажити список авто:", err);
+  }
 }
+
+
+
 
 function renderRepairHistory() {
   const container = document.getElementById("repair-history");
@@ -60,14 +67,14 @@ function renderRepairHistory() {
   }).join("");
 }
 
-function setupIndexPage() {
-  populateCarSelect();
+async function setupIndexPage() {
+  await populateCarSelect(); // ждем загрузки авто из Google Sheets
   renderRepairHistory();
 
   const form = document.getElementById("repair-form");
   if (!form) return;
 
-  form.addEventListener("submit", function(event) {
+  form.addEventListener("submit", async function(event) {
     event.preventDefault();
 
     const car = form.car.value;
@@ -93,27 +100,32 @@ function setupIndexPage() {
       date
     };
 
-    fetch(sheetURL, {
-      method: "POST",
-      body: JSON.stringify(newEntry),
-      headers: {
-        "Content-Type": "application/json"
-      }
-    })
-    .then(res => res.text())
-    .then(result => {
+    try {
+      const res = await fetch(sheetURL, {
+        method: "POST",
+        body: JSON.stringify(newEntry),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      const result = await res.text();
       console.log("Google Sheets response:", result);
-      const history = getRepairHistory();
-      history.push(newEntry);
-      setRepairHistory(history);
-      renderRepairHistory();
-      form.reset();
-      populateCarSelect();
-    })
-    .catch(err => {
+
+      if (result.toLowerCase().includes("error")) {
+        alert("Помилка при відправленні в Google Таблицю: " + result);
+      } else {
+        const history = getRepairHistory();
+        history.push(newEntry);
+        setRepairHistory(history);
+        renderRepairHistory();
+        form.reset();
+        await populateCarSelect(); // обновляем список авто после добавления
+      }
+    } catch (err) {
       console.error("Помилка при відправленні в Google Таблицю:", err);
       alert("Не вдалося надіслати дані в Google Таблицю.");
-    });
+    }
   });
 }
 
@@ -125,8 +137,13 @@ function setupLinkPage() {
 
   const container = document.getElementById("linked-cars");
 
-  function renderLinkedCars() {
-    const links = getCarLinks();
+  async function renderLinkedCars() {
+    let links;
+    try {
+      links = await fetchCarLinksFromSheet(); // загрузка с сервера
+    } catch {
+      links = getCarLinks(); // fallback
+    }
 
     if (links.length === 0) {
       container.innerHTML = "<p>Немає прив’язаних авто.</p>";
@@ -140,7 +157,7 @@ function setupLinkPage() {
     `).join("") + "</ul>";
   }
 
-  form.addEventListener("submit", function(event) {
+  form.addEventListener("submit", async function(event) {
     event.preventDefault();
 
     const car = form["car-name"].value.trim();
@@ -159,26 +176,41 @@ function setupLinkPage() {
       return;
     }
 
-    links.push({ car, tracker_type: trackerType, tracker_id: trackerId });
-    setCarLinks(links);
-    renderLinkedCars();
-    form.reset();
+    const newLink = { car, tracker_type: trackerType, tracker_id: trackerId };
+
+    try {
+      const result = await addCarLinkToSheet(newLink);
+      console.log("Google Sheets response:", result);
+      alert("Прив'язка авто додана!");
+
+      // Обновляем локальное хранилище
+      links.push(newLink);
+      setCarLinks(links);
+
+      await renderLinkedCars(); // обновляем список на странице
+      form.reset();
+    } catch (err) {
+      console.error("Помилка при відправленні прив’язки в Google Таблицю:", err);
+      alert("Не вдалося додати прив'язку до Google Таблиці.");
+    }
   });
 
   renderLinkedCars();
 }
 
+
 // --- ВИЗОВ ЗАЛЕЖНО ВІД СТОРІНКИ --- //
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
   if (document.getElementById("repair-form")) {
-    setupIndexPage();
+    await setupIndexPage();
   } else if (document.getElementById("link-form")) {
-    setupLinkPage();
+    await setupLinkPage();
   } else if (document.getElementById("car-checkboxes")) {
     setupHistoryPage();
   }
 });
+
 
 // --- ФУНКЦІЇ ДЛЯ reminder.html --- //
 
@@ -277,4 +309,29 @@ function setupHistoryPage() {
       </div>
     `).join("") || "<p>Немає записів.</p>";
   }
+
+
+// Отправка данных о привязке авто в Google Sheets (лист cars)
+function addCarLinkToSheet(carLink) {
+  return fetch(sheetCarsURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(carLink)
+  })
+  .then(res => res.text());
 }
+}
+
+async function fetchCarLinksFromSheet() {
+  try {
+    const res = await fetch(sheetCarsURL);
+    if (!res.ok) throw new Error("Не вдалося завантажити дані авто");
+    const data = await res.json();
+    setCarLinks(data); // сохраняем в localStorage
+    return data;
+  } catch (err) {
+    console.error(err);
+    return getCarLinks(); // fallback: вернуть локальные данные
+  }
+}
+
