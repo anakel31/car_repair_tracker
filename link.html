@@ -1,39 +1,41 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <title>Привязка машин</title>
+  <meta charset="UTF-8" />
+  <title>Прив'язка авто до трекера</title>
 </head>
 <body>
-  <h1>Привязка автомобиля к трекеру</h1>
+  <h1>Прив'язка автомобіля до трекера</h1>
 
   <form id="link-form">
-    <label>Автомобиль:
-      <input type="text" id="car-name" required>
-    </label><br><br>
+    <label for="car-name">Автомобіль (назва):</label><br>
+    <input type="text" id="car-name" required />
+    <br><br>
 
-    <label>Тип трекера:
-      <select id="tracker-type" required>
-        <option value="">-- Выберите --</option>
-        <option value="mega-gps">Mega-GPS</option>
-        <option value="wialon">Wialon</option>
-      </select>
-    </label><br><br>
+    <label for="tracker-type">Тип трекера:</label><br>
+    <select id="tracker-type" required>
+      <option value="">-- Оберіть --</option>
+      <option value="mega-gps">Mega-GPS</option>
+      <option value="wialon">Wialon</option>
+    </select>
+    <br><br>
 
-    <label>ID трекера:
-      <input type="text" id="tracker-id" required>
-    </label><br><br>
+    <label for="tracker-id">ID трекера (IMEI, device_id):</label><br>
+    <input type="text" id="tracker-id" required />
+    <br><br>
 
-    <button type="submit">Сохранить</button>
+    <button type="submit">Зберегти прив'язку</button>
   </form>
 
   <hr>
+
+  <h2>Прив’язані авто</h2>
   <div id="linked-cars"></div>
 
   <a href="index.html">
-    <button>Назад на главную</button>
+    <button>Назад на головну</button>
   </a>
 
-  <script src="link.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

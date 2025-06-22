@@ -1,65 +1,85 @@
 <!DOCTYPE html>
-<html lang="ua">
+<html lang="uk">
 <head>
-    <meta charset="UTF-8" />
-    <title>Відстеження ремонту автомобілів</title>
+  <meta charset="UTF-8" />
+  <title>Відстеження ремонту авто</title>
 </head>
 <body>
-    <h1>Мій сайт для відстеження ремонту автомобілів</h1>
-    <p>Тут буде інформація про ремонти та запчастини.</p>
-<h2>Добавить запись о ремонте</h2>
-<form id="repair-form">
-    <label for="car">Автомобиль:</label>
-    <select id="car" name="car" required>
-        <option value="">-- Выберите авто --</option>
-        <option value="Toyota Corolla">Toyota Corolla</option>
-        <option value="Ford Focus">Ford Focus</option>
-        <option value="Volkswagen Passat">Volkswagen Passat</option>
+  <h1>Відстеження ремонту авто</h1>
+
+  <a href="link.html">
+    <button>Перейти до прив'язки авто до трекера</button>
+  </a>
+
+<a href="history.html">
+    <button>Перейти до історії ремонту</button>
+  </a>
+  <hr>
+
+  <h2>Додати запис про ремонт</h2>
+  <form id="repair-form">
+    <label for="car-select">Автомобіль:</label>
+    <select id="car-select" name="car" required>
+      <option value="">-- Оберіть авто --</option>
+      <option value="8393">8393</option>
+      <option value="8353">8353</option>
+      <option value="4254">4254</option>
+      <option value="2271">2271</option>
+      <option value="3646">3646</option>
     </select>
     <br><br>
 
-    <label for="part">Запчасть:</label>
-    <select id="part" name="part" required>
-        <option value="">-- Выберите запчасть --</option>
-        <option value="Тормозные колодки">Тормозные колодки</option>
-        <option value="Масляный фильтр">Масляный фильтр</option>
-        <option value="Амортизатор">Амортизатор</option>
+    <label for="part-select">Запчастина:</label>
+    <select id="part-select" name="part" required>
+      <option value="">-- Оберіть запчастину --</option>
+      <option value="Масло">Масло</option>
+      <option value="Технічний огляд">Технічний огляд</option>
+      <option value="Страховка">Страховка</option>
+      <option value="Тормозні колодки">Тормозні колодки</option>
+      <option value="Амортизатори">Амортизатори</option>
     </select>
     <br><br>
 
-    <label for="comment">Комментарий (необязательно):</label><br>
-    <textarea id="comment" name="comment" rows="4" cols="50" placeholder="Например: заменили после 15 000 км"></textarea>
-    <br><br>
-    <label>
-    <input type="checkbox" id="reminder" name="reminder">
-         Напоминать о следующей замене
-    </label>
-<br><br>
-
-    <button type="submit">Сохранить</button>
-</form>
-
-<hr>
-
-<div id="output"></div>
-<script>
-document.getElementById("repair-form").addEventListener("submit", function(event) {
-    event.preventDefault(); // отменяем стандартную отправку
-
-    const car = document.getElementById("car").value;
-    const part = document.getElementById("part").value;
-    const comment = document.getElementById("comment").value;
-
-    // Пример вывода
-    const output = document.getElementById("output");
-    output.innerHTML = `
-        <h3>Добавлено:</h3>
-        <p><strong>Автомобиль:</strong> ${car}</p>
-        <p><strong>Запчасть:</strong> ${part}</p>
-        <p><strong>Комментарий:</strong> ${comment ? comment : "(не указан)"}</p>
-    `;
-});
+    <label for="replace-date">Дата заміни:</label>
+  <input type="date" id="replace-date" name="replace-date" />
+ 
+ <script>
+  const dateInput = document.getElementById("replace-date");
+  if (dateInput) {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    dateInput.value = `${yyyy}-${mm}-${dd}`;
+  }
 </script>
+  <br><br>
 
+    <label>
+      <input type="checkbox" id="reminder" name="reminder" />
+      Нагадувати про заміну
+    </label>
+    <br><br>
+
+    <div id="reminder-settings" style="display: none;">
+    <label id="reminder-label" for="reminder-value">
+      Через скільки <span id="unit-label">кілометрів</span> нагадати:
+    </label><br>
+    <input type="number" id="reminder-value" name="reminder-value" min="1" />
+    <br><br>
+  </div>
+
+    <label for="comment">Коментар (необов’язково):</label><br>
+    <textarea id="comment" name="comment" rows="4" cols="50" placeholder="Наприклад: замінено після 15000 км"></textarea>
+    <br><br>
+
+    <button type="submit">Зберегти</button>
+  </form>
+
+  <hr>
+
+  
+
+  <script src="script.js"></script>
 </body>
 </html>
