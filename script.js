@@ -21,14 +21,13 @@ const sheetURL =     "https://script.google.com/macros/s/AKfycbyIkivFze3mkNaKszI
 const sheetCarsURL = "https://script.google.com/macros/s/AKfycbyIkivFze3mkNaKszIUSzR_wLtpbaIsdSj5i1CyYrmckPbotBXnZurtnZBZECAxhecJ/exec";
 // --- ФУНКЦІЇ ДЛЯ index.html --- //
 
-async function populateCarSelect() {
+async function populateCarSelect(){
   const select = document.getElementById("car-select");
   if (!select) return;
 
   try {
-    const links = await fetchCarLinksFromSheet(); // ждём загрузки из Google Sheets
+    const links = await fetchCarLinksFromSheet();
     select.innerHTML = '<option value="">-- Оберіть авто --</option>';
-
     links.forEach(link => {
       const option = document.createElement("option");
       option.value = link.car;
@@ -39,9 +38,6 @@ async function populateCarSelect() {
     console.error("Не вдалося завантажити список авто:", err);
   }
 }
-
-
-
 
 function renderRepairHistory() {
   const container = document.getElementById("repair-history");
@@ -68,8 +64,45 @@ function renderRepairHistory() {
 }
 
 async function setupIndexPage() {
-  await populateCarSelect(); // ждем загрузки авто из Google Sheets
+  await populateCarSelect();
   renderRepairHistory();
+
+  // Устанавливаем сегодняшнюю дату при открытии страницы
+  const dateInput = document.getElementById("replace-date");
+  if (dateInput) {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    dateInput.value = `${yyyy}-${mm}-${dd}`;
+  }
+
+  // Напоминания: инициализация только если элементы есть на странице
+  const partSelect = document.getElementById("part-select");
+  const reminderCheckbox = document.getElementById("reminder");
+  const reminderSettings = document.getElementById("reminder-settings");
+  const unitLabel = document.getElementById("unit-label");
+
+  function updateReminderVisibility() {
+    if (!partSelect || !reminderCheckbox || !reminderSettings || !unitLabel) return;
+    const selectedPart = partSelect.value;
+    const isChecked = reminderCheckbox.checked;
+
+    if (isChecked) {
+      reminderSettings.style.display = "block";
+      unitLabel.textContent = selectedPart === "Страховка" || selectedPart === "Технічний огляд"
+        ? "днів"
+        : "кілометрів";
+    } else {
+      reminderSettings.style.display = "none";
+    }
+  }
+
+  if (reminderCheckbox && partSelect) {
+    reminderCheckbox.addEventListener("change", updateReminderVisibility);
+    partSelect.addEventListener("change", updateReminderVisibility);
+    updateReminderVisibility();
+  }
 
   const form = document.getElementById("repair-form");
   if (!form) return;
@@ -120,7 +153,8 @@ async function setupIndexPage() {
         setRepairHistory(history);
         renderRepairHistory();
         form.reset();
-        await populateCarSelect(); // обновляем список авто после добавления
+        await populateCarSelect();
+        if (reminderSettings) reminderSettings.style.display = "none";
       }
     } catch (err) {
       console.error("Помилка при відправленні в Google Таблицю:", err);
@@ -140,9 +174,9 @@ function setupLinkPage() {
   async function renderLinkedCars() {
     let links;
     try {
-      links = await fetchCarLinksFromSheet(); // загрузка с сервера
+      links = await fetchCarLinksFromSheet();
     } catch {
-      links = getCarLinks(); // fallback
+      links = getCarLinks();
     }
 
     if (links.length === 0) {
@@ -183,11 +217,10 @@ function setupLinkPage() {
       console.log("Google Sheets response:", result);
       alert("Прив'язка авто додана!");
 
-      // Обновляем локальное хранилище
       links.push(newLink);
       setCarLinks(links);
 
-      await renderLinkedCars(); // обновляем список на странице
+      await renderLinkedCars();
       form.reset();
     } catch (err) {
       console.error("Помилка при відправленні прив’язки в Google Таблицю:", err);
@@ -197,7 +230,6 @@ function setupLinkPage() {
 
   renderLinkedCars();
 }
-
 
 // --- ВИЗОВ ЗАЛЕЖНО ВІД СТОРІНКИ --- //
 
@@ -211,43 +243,6 @@ document.addEventListener("DOMContentLoaded", async function() {
   }
 });
 
-
-// --- ФУНКЦІЇ ДЛЯ reminder.html --- //
-
-const partSelect = document.getElementById("part-select");
-const reminderCheckbox = document.getElementById("reminder");
-const reminderSettings = document.getElementById("reminder-settings");
-const unitLabel = document.getElementById("unit-label");
-
-function updateReminderVisibility() {
-  const selectedPart = partSelect.value;
-  const isChecked = reminderCheckbox.checked;
-
-  if (isChecked) {
-    reminderSettings.style.display = "block";
-    unitLabel.textContent = selectedPart === "Страховка" || selectedPart === "Технічний огляд"
-      ? "днів"
-      : "кілометрів";
-  } else {
-    reminderSettings.style.display = "none";
-  }
-}
-
-if (reminderCheckbox && partSelect) {
-  reminderCheckbox.addEventListener("change", updateReminderVisibility);
-  partSelect.addEventListener("change", updateReminderVisibility);
-}
-
-// Устанавливаем сегодняшнюю дату
-const dateInput = document.getElementById("replace-date");
-if (dateInput) {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  dateInput.value = `${yyyy}-${mm}-${dd}`;
-}
-
 // --- ІСТОРІЯ --- //
 
 function setupHistoryPage() {
@@ -260,8 +255,11 @@ function setupHistoryPage() {
 
   if (links.length === 0) {
     checkboxesContainer.innerHTML = "<p>Немає збережених авто.</p>";
+    latestReplContainer.innerHTML = "";
+    fullHistoryContainer.innerHTML = "";
     return;
   }
+  checkboxesContainer.innerHTML = "";
 
   links.forEach(link => {
     const label = document.createElement("label");
@@ -279,6 +277,9 @@ function setupHistoryPage() {
   });
 
   function showHistory(selectedCars) {
+    latestReplContainer.innerHTML = "";
+    fullHistoryContainer.innerHTML = "";
+
     const filtered = history.filter(item => selectedCars.includes(item.car));
 
     const latestByCarPart = {};
@@ -309,9 +310,10 @@ function setupHistoryPage() {
       </div>
     `).join("") || "<p>Немає записів.</p>";
   }
+}
 
+// --- Google Sheets helpers --- //
 
-// Отправка данных о привязке авто в Google Sheets (лист cars)
 function addCarLinkToSheet(carLink) {
   return fetch(sheetCarsURL, {
     method: "POST",
@@ -320,18 +322,16 @@ function addCarLinkToSheet(carLink) {
   })
   .then(res => res.text());
 }
-}
 
 async function fetchCarLinksFromSheet() {
   try {
     const res = await fetch(sheetCarsURL);
     if (!res.ok) throw new Error("Не вдалося завантажити дані авто");
     const data = await res.json();
-    setCarLinks(data); // сохраняем в localStorage
+    setCarLinks(data);
     return data;
   } catch (err) {
     console.error(err);
-    return getCarLinks(); // fallback: вернуть локальные данные
+    return getCarLinks();
   }
 }
-
