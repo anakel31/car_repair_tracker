@@ -7,5 +7,54 @@
 <body>
     <h1>Мій сайт для відстеження ремонту автомобілів</h1>
     <p>Тут буде інформація про ремонти та запчастини.</p>
+<h2>Добавить запись о ремонте</h2>
+<form id="repair-form">
+    <label for="car">Автомобиль:</label>
+    <select id="car" name="car" required>
+        <option value="">-- Выберите авто --</option>
+        <option value="Toyota Corolla">Toyota Corolla</option>
+        <option value="Ford Focus">Ford Focus</option>
+        <option value="Volkswagen Passat">Volkswagen Passat</option>
+    </select>
+    <br><br>
+
+    <label for="part">Запчасть:</label>
+    <select id="part" name="part" required>
+        <option value="">-- Выберите запчасть --</option>
+        <option value="Тормозные колодки">Тормозные колодки</option>
+        <option value="Масляный фильтр">Масляный фильтр</option>
+        <option value="Амортизатор">Амортизатор</option>
+    </select>
+    <br><br>
+
+    <label for="comment">Комментарий (необязательно):</label><br>
+    <textarea id="comment" name="comment" rows="4" cols="50" placeholder="Например: заменили после 15 000 км"></textarea>
+    <br><br>
+
+    <button type="submit">Сохранить</button>
+</form>
+
+<hr>
+
+<div id="output"></div>
+<script>
+document.getElementById("repair-form").addEventListener("submit", function(event) {
+    event.preventDefault(); // отменяем стандартную отправку
+
+    const car = document.getElementById("car").value;
+    const part = document.getElementById("part").value;
+    const comment = document.getElementById("comment").value;
+
+    // Пример вывода
+    const output = document.getElementById("output");
+    output.innerHTML = `
+        <h3>Добавлено:</h3>
+        <p><strong>Автомобиль:</strong> ${car}</p>
+        <p><strong>Запчасть:</strong> ${part}</p>
+        <p><strong>Комментарий:</strong> ${comment ? comment : "(не указан)"}</p>
+    `;
+});
+</script>
+
 </body>
 </html>
