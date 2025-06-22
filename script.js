@@ -15,23 +15,19 @@ function getRepairHistory() {
 function setRepairHistory(history) {
   localStorage.setItem("repair_history", JSON.stringify(history));
 }
+
 // ⬇️ Вставь свой реальный URL ниже
 const sheetURL = "https://script.google.com/macros/s/AKfycbyIkivFze3mkNaKszIUSzR_wLtpbaIsdSj5i1CyYrmckPbotBXnZurtnZBZECAxhecJ/exec";
-
-
 
 // --- ФУНКЦІЇ ДЛЯ index.html --- //
 
 function populateCarSelect() {
   const select = document.getElementById("car-select");
-  if (!select) return; // якщо на сторінці немає селекта — пропускаємо
+  if (!select) return;
 
   const links = getCarLinks();
-
-  // Очистити поточний список
   select.innerHTML = '<option value="">-- Оберіть авто --</option>';
 
-  // Додати машини зі збережених прив’язок
   links.forEach(link => {
     const option = document.createElement("option");
     option.value = link.car;
@@ -51,66 +47,75 @@ function renderRepairHistory() {
     return;
   }
 
-  // Вивід у зворотньому хронологічному порядку (останні записи зверху)
   container.innerHTML = history.slice().reverse().map(item => {
     return `
       <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px;">
         <strong>Авто:</strong> ${item.car}<br>
         <strong>Запчастина:</strong> ${item.part}<br>
         <strong>Нагадування:</strong> ${item.reminder ? "Так" : "Ні"}<br>
-        <strong>Коментар:</strong> ${item.comment ? item.comment : "<i>немає</i>"}<br>
+        <strong>Коментар:</strong> ${item.comment || "<i>немає</i>"}<br>
         <strong>Дата:</strong> ${item.date}
       </div>
     `;
   }).join("");
 }
 
-form.addEventListener("submit", function(event) {
-  event.preventDefault();
-
-  const car = form.car.value;
-  const part = form.part.value;
-  const reminder = form.reminder.checked;
-  const comment = form.comment.value.trim();
-
-  if (!car || !part) {
-    alert("Будь ласка, виберіть авто та запчастину.");
-    return;
-  }
-
-  const newEntry = {
-    car: car,
-    part: part,
-    reminder: reminder,
-    reminder_value: reminder ? document.getElementById("reminder-value").value : null,
-    reminder_unit: reminder
-      ? (part === "Страховка" || part === "Технічний огляд" ? "днів" : "км")
-      : null,
-    comment: comment,
-    date: document.getElementById("replace-date").value
-  };
-
-  // ⬇️ Отправка в Google Таблицу
-  fetch(sheetURL, {
-    method: "POST",
-    body: JSON.stringify(newEntry),
-    headers: {
-      "Content-Type": "application/json"
-    }
-  })
-  .then(res => res.text())
-  .then(result => console.log("Google Sheets response:", result))
-  .catch(err => console.error("Помилка при відправленні в Google Таблицю:", err));
-
-  const history = getRepairHistory();
-  history.push(newEntry);
-  setRepairHistory(history);
-
-  renderRepairHistory();
-  form.reset();
+function setupIndexPage() {
   populateCarSelect();
-});
+  renderRepairHistory();
 
+  const form = document.getElementById("repair-form");
+  if (!form) return;
+
+  form.addEventListener("submit", function(event) {
+    event.preventDefault();
+
+    const car = form.car.value;
+    const part = form.part.value;
+    const reminder = form.reminder.checked;
+    const comment = form.comment.value.trim();
+    const reminderValue = reminder ? document.getElementById("reminder-value").value : null;
+    const reminderUnit = reminder ? (part === "Страховка" || part === "Технічний огляд" ? "днів" : "км") : null;
+    const date = document.getElementById("replace-date").value;
+
+    if (!car || !part) {
+      alert("Будь ласка, виберіть авто та запчастину.");
+      return;
+    }
+
+    const newEntry = {
+      car,
+      part,
+      reminder,
+      reminder_value: reminderValue,
+      reminder_unit: reminderUnit,
+      comment,
+      date
+    };
+
+    fetch(sheetURL, {
+      method: "POST",
+      body: JSON.stringify(newEntry),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+    .then(res => res.text())
+    .then(result => {
+      console.log("Google Sheets response:", result);
+      const history = getRepairHistory();
+      history.push(newEntry);
+      setRepairHistory(history);
+      renderRepairHistory();
+      form.reset();
+      populateCarSelect();
+    })
+    .catch(err => {
+      console.error("Помилка при відправленні в Google Таблицю:", err);
+      alert("Не вдалося надіслати дані в Google Таблицю.");
+    });
+  });
+}
 
 // --- ФУНКЦІЇ ДЛЯ link.html --- //
 
@@ -148,20 +153,13 @@ function setupLinkPage() {
     }
 
     const links = getCarLinks();
-
-    // Перевірка на дублікати по авто та трекеру
     const duplicate = links.find(l => l.car === car && l.tracker_id === trackerId);
     if (duplicate) {
       alert("Ця прив’язка вже існує.");
       return;
     }
 
-    links.push({
-      car: car,
-      tracker_type: trackerType,
-      tracker_id: trackerId
-    });
-
+    links.push({ car, tracker_type: trackerType, tracker_id: trackerId });
     setCarLinks(links);
     renderLinkedCars();
     form.reset();
@@ -170,7 +168,7 @@ function setupLinkPage() {
   renderLinkedCars();
 }
 
-// --- ВИЗОВ ЗАЛЕЖНО ВІД СТОРІНКИ ---
+// --- ВИЗОВ ЗАЛЕЖНО ВІД СТОРІНКИ --- //
 
 document.addEventListener("DOMContentLoaded", function() {
   if (document.getElementById("repair-form")) {
@@ -183,6 +181,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // --- ФУНКЦІЇ ДЛЯ reminder.html --- //
+
 const partSelect = document.getElementById("part-select");
 const reminderCheckbox = document.getElementById("reminder");
 const reminderSettings = document.getElementById("reminder-settings");
@@ -194,21 +193,20 @@ function updateReminderVisibility() {
 
   if (isChecked) {
     reminderSettings.style.display = "block";
-    if (selectedPart === "Страховка" || selectedPart === "Технічний огляд") {
-      unitLabel.textContent = "днів";
-    } else {
-      unitLabel.textContent = "кілометрів";
-    }
+    unitLabel.textContent = selectedPart === "Страховка" || selectedPart === "Технічний огляд"
+      ? "днів"
+      : "кілометрів";
   } else {
     reminderSettings.style.display = "none";
   }
 }
 
-// Показываем блок при изменении
-reminderCheckbox.addEventListener("change", updateReminderVisibility);
-partSelect.addEventListener("change", updateReminderVisibility);
+if (reminderCheckbox && partSelect) {
+  reminderCheckbox.addEventListener("change", updateReminderVisibility);
+  partSelect.addEventListener("change", updateReminderVisibility);
+}
 
-// Устанавливаем сегодняшнюю дату по умолчанию
+// Устанавливаем сегодняшнюю дату
 const dateInput = document.getElementById("replace-date");
 if (dateInput) {
   const today = new Date();
@@ -217,6 +215,8 @@ if (dateInput) {
   const dd = String(today.getDate()).padStart(2, '0');
   dateInput.value = `${yyyy}-${mm}-${dd}`;
 }
+
+// --- ІСТОРІЯ --- //
 
 function setupHistoryPage() {
   const checkboxesContainer = document.getElementById("car-checkboxes");
@@ -231,8 +231,7 @@ function setupHistoryPage() {
     return;
   }
 
-  // Показ чекбоксів для вибору авто
-  links.forEach((link, index) => {
+  links.forEach(link => {
     const label = document.createElement("label");
     label.innerHTML = `
       <input type="checkbox" name="car-filter" value="${link.car}" />
@@ -242,19 +241,15 @@ function setupHistoryPage() {
     checkboxesContainer.appendChild(document.createElement("br"));
   });
 
-  // Обработка изменения выбора
   checkboxesContainer.addEventListener("change", () => {
     const selectedCars = Array.from(document.querySelectorAll('input[name="car-filter"]:checked')).map(cb => cb.value);
     showHistory(selectedCars);
   });
 
   function showHistory(selectedCars) {
-    // Фильтрация по вибраних авто
     const filtered = history.filter(item => selectedCars.includes(item.car));
 
-    // ---- ОСТАННІ ЗАМІНИ по КОЖНІЙ part ----
     const latestByCarPart = {};
-
     filtered.forEach(entry => {
       const key = `${entry.car}__${entry.part}`;
       if (!latestByCarPart[key] || new Date(entry.date) > new Date(latestByCarPart[key].date)) {
@@ -262,33 +257,24 @@ function setupHistoryPage() {
       }
     });
 
-    if (Object.keys(latestByCarPart).length === 0) {
-      latestReplContainer.innerHTML = "<p>Немає даних.</p>";
-    } else {
-      latestReplContainer.innerHTML = Object.values(latestByCarPart).map(item => `
-        <div style="border:1px solid #aaa; padding:10px; margin-bottom:10px;">
-          🚗 <strong>${item.car}</strong><br>
-          🔧 <strong>${item.part}</strong><br>
-          📅 Дата заміни: ${item.date}<br>
-          🔁 Нагадування: ${item.reminder ? `через ${item.reminder_value} ${item.reminder_unit}` : "Ні"}<br>
-          💬 Коментар: ${item.comment || "<i>немає</i>"}
-        </div>
-      `).join("");
-    }
+    latestReplContainer.innerHTML = Object.values(latestByCarPart).map(item => `
+      <div style="border:1px solid #aaa; padding:10px; margin-bottom:10px;">
+        🚗 <strong>${item.car}</strong><br>
+        🔧 <strong>${item.part}</strong><br>
+        📅 Дата заміни: ${item.date}<br>
+        🔁 Нагадування: ${item.reminder ? `через ${item.reminder_value} ${item.reminder_unit}` : "Ні"}<br>
+        💬 Коментар: ${item.comment || "<i>немає</i>"}
+      </div>
+    `).join("") || "<p>Немає даних.</p>";
 
-    // ---- ПОВНА ІСТОРІЯ для вибраного авто ----
     const sorted = filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    if (sorted.length === 0) {
-      fullHistoryContainer.innerHTML = "<p>Немає записів.</p>";
-    } else {
-      fullHistoryContainer.innerHTML = sorted.map(item => `
-        <div style="border:1px solid #ccc; padding:8px; margin-bottom:8px;">
-          <strong>${item.date}</strong> — ${item.car} — ${item.part}<br>
-          🔁 ${item.reminder ? `Нагадати через ${item.reminder_value} ${item.reminder_unit}` : "Без нагадування"}<br>
-          💬 ${item.comment || "<i>немає коментаря</i>"}
-        </div>
-      `).join("");
-    }
+    fullHistoryContainer.innerHTML = sorted.map(item => `
+      <div style="border:1px solid #ccc; padding:8px; margin-bottom:8px;">
+        <strong>${item.date}</strong> — ${item.car} — ${item.part}<br>
+        🔁 ${item.reminder ? `Нагадати через ${item.reminder_value} ${item.reminder_unit}` : "Без нагадування"}<br>
+        💬 ${item.comment || "<i>немає коментаря</i>"}
+      </div>
+    `).join("") || "<p>Немає записів.</p>";
   }
 }
