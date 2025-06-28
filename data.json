@@ -1,1 +1,27 @@
-[]
+[
+  {
+    "car": "4254",
+    "tracker_type": "mega-gps",
+    "tracker_id": "23647"
+  },
+  {
+    "car": "8393",
+    "tracker_type": "mega-gps",
+    "tracker_id": "29233"
+  },
+  {
+    "car": "3646",
+    "tracker_type": "mega-gps",
+    "tracker_id": "19572"
+  },
+  {
+    "car": "8353",
+    "tracker_type": "mega-gps",
+    "tracker_id": "19573"
+  },
+  {
+    "car": "4573",
+    "tracker_type": "mega-gps",
+    "tracker_id": "25620"
+  }
+]
