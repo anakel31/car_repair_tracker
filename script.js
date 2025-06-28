@@ -306,3 +306,12 @@ async function setupHistoryPage() {
     `).join("") || "<p>Немає записів.</p>";
   }
 }
+async function readJsonFile(filename) {
+  try {
+    const res = await fetch(filename);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
