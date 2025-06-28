@@ -33,3 +33,31 @@ app.post('/api/data', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Сервер запущен: http://localhost:${PORT}`);
 });
+
+app.post('/api/cars', (req, res) => {
+  fs.writeFile('cars.json', JSON.stringify(req.body, null, 2), err => {
+    if (err) return res.status(500).send('Error');
+    res.send('OK');
+  });
+});
+
+app.post('/api/history', (req, res) => {
+  fs.writeFile('history.json', JSON.stringify(req.body, null, 2), err => {
+    if (err) return res.status(500).send('Error');
+    res.send('OK');
+  });
+});
+
+app.get('/api/cars', (req, res) => {
+  fs.readFile('cars.json', 'utf8', (err, data) => {
+    if (err) return res.json([]);
+    res.json(JSON.parse(data || '[]'));
+  });
+});
+
+app.get('/api/history', (req, res) => {
+  fs.readFile('history.json', 'utf8', (err, data) => {
+    if (err) return res.json([]);
+    res.json(JSON.parse(data || '[]'));
+  });
+});

@@ -1,7 +1,4 @@
 // --- ЗАГАЛЬНІ ФУНКЦІЇ --- //
-// Имя файла для хранения данных (относительно папки сайта)
-const DATA_FILE = "data.json";
-
 // --- Работа с локальным файлом (только для десктопа через Node.js/Electron) --- //
 
 async function universalReadJsonFile(apiUrl, fileUrl) {
@@ -17,58 +14,53 @@ async function universalReadJsonFile(apiUrl, fileUrl) {
   } catch {}
   return [];
 }
-async function readDataFile() {
-  return await universalReadJsonFile('/api/data', 'data.json');
-}
 
-async function readCarsFile() {
+// --- Работа с привязками авто (cars.json) --- //
+async function getCarLinks() {
   return await universalReadJsonFile('/api/cars', 'cars.json');
 }
 
-async function readHistoryFile() {
+async function setCarLinks(links) {
+  await writeCarsFile(links);
+}
+
+// --- Работа с историей ремонтов (history.json) --- //
+async function getRepairHistory() {
   return await universalReadJsonFile('/api/history', 'history.json');
 }
 
-async function writeDataFile(data) {
+async function setRepairHistory(history) {
+  await writeHistoryFile(history);
+}
+
+// --- Функции для чтения/записи файлов --- //
+async function writeCarsFile(data) {
   try {
-    const res = await fetch('/api/data', {
+    const res = await fetch('/api/cars', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
     return res.ok;
   } catch {
-    alert("Ошибка записи данных!");
+    alert("Ошибка записи привязок!");
     return false;
   }
 }
 
-// --- Работа с данными --- //
-
-async function getCarLinks() {
-  const data = await readDataFile();
-  return data.filter(item => item.tracker_type && item.tracker_id);
+async function writeHistoryFile(data) {
+  try {
+    const res = await fetch('/api/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return res.ok;
+  } catch {
+    alert("Ошибка записи истории!");
+    return false;
+  }
 }
-
-async function setCarLinks(links) {
-  const data = await readDataFile();
-  // Удаляем старые привязки, добавляем новые
-  const others = data.filter(item => !(item.tracker_type && item.tracker_id));
-  await writeDataFile([...others, ...links]);
-}
-
-async function getRepairHistory() {
-  const data = await readDataFile();
-  return data.filter(item => item.part && item.date);
-}
-
-async function setRepairHistory(history) {
-  const data = await readDataFile();
-  // Удаляем старую историю, добавляем новую
-  const others = data.filter(item => !(item.part && item.date));
-  await writeDataFile([...others, ...history]);
-}
-
 // --- ФУНКЦІЇ ДЛЯ index.html --- //
 
 async function populateCarSelect() {
@@ -158,32 +150,36 @@ async function setupIndexPage() {
   if (!form) return;
 
   form.addEventListener("submit", async function(event) {
-  event.preventDefault();
+    event.preventDefault();
 
-  const car = form["car-name"].value.trim();
-  const trackerType = form["tracker-type"].value;
-  const trackerId = form["tracker-id"].value.trim();
+    const car = form["car"].value;
+    const part = form["part"].value;
+    const date = form["replace-date"].value;
+    const reminder = form["reminder"].checked;
+    const reminder_value = form["reminder-value"] ? form["reminder-value"].value : "";
+    const reminder_unit = document.getElementById("unit-label")?.textContent || "";
+    const comment = form["comment"].value.trim();
 
-  if (!car || !trackerType || !trackerId) {
-    alert("Будь ласка, заповніть всі поля.");
-    return;
-  }
+    if (!car || !part || !date) {
+      alert("Будь ласка, заповніть всі обов'язкові поля.");
+      return;
+    }
 
-  // Получаем все существующие привязки
-  const links = await getCarLinks();
-  const duplicate = links.find(l => l.car === car && l.tracker_id === trackerId);
-  if (duplicate) {
-    alert("Ця прив’язка вже існує.");
-    return;
-  }
+    const history = await getRepairHistory();
+    const newRepair = {
+      car,
+      part,
+      date,
+      reminder,
+      reminder_value: reminder ? reminder_value : "",
+      reminder_unit: reminder ? reminder_unit : "",
+      comment
+    };
 
-  const newLink = { car, tracker_type: trackerType, tracker_id: trackerId };
-  // Передаём массив всех привязок + новая
-  await setCarLinks([...links, newLink]);
-
-  await renderLinkedCars();
-  form.reset();
-});
+    await setRepairHistory([...history, newRepair]);
+    await renderRepairHistory();
+    form.reset();
+  });
 }
 
 // --- ФУНКЦІЇ ДЛЯ link.html --- //
