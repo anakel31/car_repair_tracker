@@ -17,7 +17,17 @@ async function universalReadJsonFile(apiUrl, fileUrl) {
   } catch {}
   return [];
 }
+async function readDataFile() {
+  return await universalReadJsonFile('/api/data', 'data.json');
+}
 
+async function readCarsFile() {
+  return await universalReadJsonFile('/api/cars', 'cars.json');
+}
+
+async function readHistoryFile() {
+  return await universalReadJsonFile('/api/history', 'history.json');
+}
 
 async function writeDataFile(data) {
   try {
