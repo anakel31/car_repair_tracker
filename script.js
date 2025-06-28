@@ -1,20 +1,23 @@
 // --- ЗАГАЛЬНІ ФУНКЦІЇ --- //
-
 // Имя файла для хранения данных (относительно папки сайта)
 const DATA_FILE = "data.json";
 
 // --- Работа с локальным файлом (только для десктопа через Node.js/Electron) --- //
 
-// Чтение данных из файла (только для десктопа, не для браузера!)
-async function readDataFile() {
+async function universalReadJsonFile(apiUrl, fileUrl) {
+  // Сначала пробуем через API
   try {
-    const res = await fetch('/api/data');
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
+    const res = await fetch(apiUrl);
+    if (res.ok) return await res.json();
+  } catch {}
+  // Если не получилось — пробуем как статический файл
+  try {
+    const res = await fetch(fileUrl);
+    if (res.ok) return await res.json();
+  } catch {}
+  return [];
 }
+
 
 async function writeDataFile(data) {
   try {
@@ -304,14 +307,5 @@ async function setupHistoryPage() {
         💬 ${item.comment || "<i>немає коментаря</i>"}
       </div>
     `).join("") || "<p>Немає записів.</p>";
-  }
-}
-async function readJsonFile(filename) {
-  try {
-    const res = await fetch(filename);
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
   }
 }
