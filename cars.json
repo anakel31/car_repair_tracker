@@ -23,5 +23,10 @@
     "car": "4573",
     "tracker_type": "mega-gps",
     "tracker_id": "25620"
+  },
+  {
+    "car": "2271",
+    "tracker_type": "wialon",
+    "tracker_id": "13226002290290"
   }
 ]

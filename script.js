@@ -367,7 +367,7 @@ async function renderRemindersTable() {
 
   tableBody.innerHTML = '';
   for (const item of latestReminders) {
-    const carLink = carLinks.find(link => link.car === item.car && link.tracker_type === "mega-gps");
+    const carLink = carLinks.find(link => link.car === item.car);
     let days = '';
     let km = '';
     let kmLeft = null;
@@ -378,7 +378,13 @@ async function renderRemindersTable() {
       days = diff > 0 ? diff : 0;
     }
     if (item.reminder_unit === 'кілометрів' && carLink) {
-      const mileage = await getPartMileage(carLink.tracker_id, item.date);
+      const wialonParams = carLink.tracker_type === "wialon" ? {
+       token: '783f97bc76ff1204b0d949403cdfcc55168DC39DA6503C88CD20280AF26297B9DF66A46B',
+       reportResourceId: 123456,
+       reportTemplateId: 1,
+       reportObjectId: carLink.tracker_id
+    } : null;
+    const mileage = await getPartMileageUniversal(carLink, item.date, wialonParams);
       if (mileage != null) {
         kmLeft = item.reminder_value - mileage;
         kmLeft = kmLeft > 0 ? kmLeft : 0;
@@ -450,6 +456,59 @@ async function getPartMileage(tracker_id, repairDate) {
   const from = Math.floor(fromDate.getTime() / 1000);
   const to = Math.floor(Date.now() / 1000);
   return await getMileageMegaGPS(tracker_id, from, to);
+}
+
+
+async function getPartMileageUniversal(carLink, repairDate, wialonParams) {
+  const fromDate = new Date(repairDate + 'T22:00:00');
+  const from = Math.floor(fromDate.getTime() / 1000);
+  const to = Math.floor(Date.now() / 1000);
+
+  if (carLink.tracker_type === "mega-gps") {
+    return await getMileageMegaGPS(carLink.tracker_id, from, to);
+  }
+  if (carLink.tracker_type === "wialon" && wialonParams) {
+  return await getMileageWialon(
+    wialonParams.token,
+    wialonParams.reportResourceId,
+    wialonParams.reportTemplateId,
+    wialonParams.reportObjectId,
+    from,
+    to
+  );
+}
+  return null;
+}
+
+// Получить sid по токену Wialon (автоматизация)
+async function getWialonSid(token) {
+  try {
+    const res = await fetch('https://wialon.gps-garant.com.ua/wialon/ajax.html', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `svc=token/login&params=${encodeURIComponent(JSON.stringify({ token }))}`
+    });
+    const data = await res.json();
+    return data.eid || null;
+  } catch {
+    return null;
+  }
+}
+
+// Получить пробег через Wialon (через сервер-прокси)
+async function getMileageWialon(token, reportResourceId, reportTemplateId, reportObjectId, from, to) {
+  try {
+    const res = await fetch('/proxy/wialon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, reportResourceId, reportTemplateId, reportObjectId, from, to })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.rows && data.rows[0] ? Number(data.rows[0].c[3]) : null; // c[3] — зависит от шаблона
+  } catch {
+    return null;
+  }
 }
 
 // Вызовите после загрузки страницы
