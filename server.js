@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 
+const axios = require('axios');
+
 const app = express();
 const PORT = 3000;
 const DATA_FILE = path.join(__dirname, 'data.json');
@@ -60,4 +62,21 @@ app.get('/api/history', (req, res) => {
     if (err) return res.json([]);
     res.json(JSON.parse(data || '[]'));
   });
+});
+
+app.post('/proxy/megagps', async (req, res) => {
+  try {
+    const { tracker_id, from, to, apiKey } = req.body;
+    const params = new URLSearchParams({
+      s: apiKey,
+      c: 2,
+      i: tracker_id,
+      x: from,
+      y: to
+    });
+    const response = await axios.post('http://mega-gps.com/api3', params);
+    res.send(response.data);
+  } catch (e) {
+    res.status(500).send('Proxy error');
+  }
 });

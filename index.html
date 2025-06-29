@@ -32,11 +32,23 @@
     <label for="part-select">Запчастина:</label>
     <select id="part-select" name="part" required>
       <option value="">-- Оберіть запчастину --</option>
-      <option value="Масло">Масло</option>
+      <option value="Масло двигун">Масло двигун</option>
       <option value="Технічний огляд">Технічний огляд</option>
       <option value="Страховка">Страховка</option>
       <option value="Тормозні колодки">Тормозні колодки</option>
       <option value="Амортизатори">Амортизатори</option>
+      <option value="Рессори/Подушки">Рессори/Подушки</option>
+      <option value="Фари">Фари</option>
+      <option value="Ходова частина перед">Ходова частина перед</option>
+      <option value="Ходова частина зад">Ходова частина зад</option>
+      <option value="Електроніка">Електроніка</option>
+      <option value="Аккумулятор">Аккумулятор</option>
+      <option value="Ремонт гідроборт">Ремонт гідроборт</option>
+      <option value="Масло коробка">Масло коробка</option>
+      <option value="Масло мост">Масло мост</option>
+      <option value="Антифриз">Антифриз</option>
+      <option value="Гальмівна рідина">Гальмівна рідина</option>
+      <option value="Повітряний фільтр">Повітряний фільтр</option>
     </select>
     <br><br>
 
@@ -68,7 +80,22 @@
   </form>
 
   <hr>
-
+<div id="reminders-panel" style="position: absolute; top: 20px; right: 20px; width: 420px; background: #f8f8f8; border: 1px solid #ccc; padding: 16px;">
+  <h3>Нагадування про ремонт</h3>
+  <table id="reminders-table" border="1" cellpadding="6" style="width:100%; background:#fff;">
+    <thead>
+      <tr>
+        <th>Авто</th>
+        <th>Запчастина</th>
+        <th>Днів до нагадування</th>
+        <th>Кілометрів до нагадування</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- напоминания будут тут -->
+    </tbody>
+  </table>
+</div>
   
 </body>
 </html>

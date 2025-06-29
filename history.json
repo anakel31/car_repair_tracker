@@ -1,0 +1,65 @@
+[
+  {
+    "car": "4254",
+    "part": "Масло",
+    "date": "2025-06-23",
+    "reminder": true,
+    "reminder_value": "10000",
+    "reminder_unit": "кілометрів",
+    "comment": ""
+  },
+  {
+    "car": "4254",
+    "part": "Масло",
+    "date": "2025-06-28",
+    "reminder": true,
+    "reminder_value": "10000",
+    "reminder_unit": "кілометрів",
+    "comment": ""
+  },
+  {
+    "car": "4254",
+    "part": "Масло",
+    "date": "2025-06-28",
+    "reminder": true,
+    "reminder_value": "1",
+    "reminder_unit": "кілометрів",
+    "comment": ""
+  },
+  {
+    "car": "8393",
+    "part": "Масло",
+    "date": "2025-06-28",
+    "reminder": true,
+    "reminder_value": "10000",
+    "reminder_unit": "кілометрів",
+    "comment": ""
+  },
+  {
+    "car": "3646",
+    "part": "Масло",
+    "date": "2025-03-01",
+    "reminder": true,
+    "reminder_value": "15000",
+    "reminder_unit": "кілометрів",
+    "comment": ""
+  },
+  {
+    "car": "3646",
+    "part": "Масло",
+    "date": "2025-06-01",
+    "reminder": true,
+    "reminder_value": "10000",
+    "reminder_unit": "кілометрів",
+    "comment": "Попередня заміна: 2025-03-01. Пройдено 92 дн., 6556 км."
+  },
+  {
+    "car": "3646",
+    "part": "Масло",
+    "date": "2025-06-16",
+    "reminder": true,
+    "reminder_value": "120000",
+    "reminder_unit": "кілометрів",
+    "comment": "123444аукка | Попередня заміна: 2025-06-01. Пройдено 15 дн., 413 км."
+  }
+]

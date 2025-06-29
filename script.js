@@ -176,6 +176,35 @@ async function setupIndexPage() {
       comment
     };
 
+    // --- Новый блок: если есть предыдущая замена этой запчасти на этом авто ---
+const prev = history
+  .filter(item => item.car === car && item.part === part)
+  .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+if (prev) {
+  // Считаем разницу в днях
+  const prevDate = new Date(prev.date + 'T22:00:00');
+  const currDate = new Date(date + 'T22:00:00');
+  const daysPassed = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
+
+  // Считаем разницу в километрах (если есть привязка)
+  const carLinks = await getCarLinks();
+  const carLink = carLinks.find(link => link.car === car && link.tracker_type === "mega-gps");
+  let kmPassed = null;
+  if (carLink) {
+    kmPassed = await getMileageMegaGPS(
+      carLink.tracker_id,
+      Math.floor(prevDate.getTime() / 1000),
+      Math.floor(currDate.getTime() / 1000)
+    );
+  }
+
+  // Добавляем к комментарию
+  let addComment = `Попередня заміна: ${prev.date}. Пройдено ${daysPassed} дн.`;
+  if (kmPassed !== null) addComment += `, ${Math.round(kmPassed)} км.`;
+  newRepair.comment = (newRepair.comment ? newRepair.comment + " | " : "") + addComment;
+}
+
     await setRepairHistory([...history, newRepair]);
     await renderRepairHistory();
     form.reset();
@@ -315,3 +344,115 @@ async function setupHistoryPage() {
     `).join("") || "<p>Немає записів.</p>";
   }
 }
+
+async function renderRemindersTable() {
+  const tableBody = document.querySelector('#reminders-table tbody');
+  if (!tableBody) return;
+  const history = await getRepairHistory();
+  const carLinks = await getCarLinks();
+
+  // Фильтруем только записи с напоминанием
+  const reminders = history.filter(item => item.reminder && (item.reminder_value || item.reminder_unit));
+
+  // Оставляем только последние записи по каждой паре "авто+запчастина"
+  const latestByCarPart = {};
+  reminders.forEach(item => {
+    const key = `${item.car}__${item.part}`;
+    if (!latestByCarPart[key] || new Date(item.date) > new Date(latestByCarPart[key].date)) {
+      latestByCarPart[key] = item;
+    }
+  });
+
+  const latestReminders = Object.values(latestByCarPart);
+
+  tableBody.innerHTML = '';
+  for (const item of latestReminders) {
+    const carLink = carLinks.find(link => link.car === item.car && link.tracker_type === "mega-gps");
+    let days = '';
+    let km = '';
+    let kmLeft = null;
+    if (item.reminder_unit === 'днів') {
+      const repairDate = new Date(item.date + 'T22:00:00');
+      const now = new Date();
+      const diff = Math.ceil((repairDate.getTime() + item.reminder_value * 24 * 3600 * 1000 - now.getTime()) / (24 * 3600 * 1000));
+      days = diff > 0 ? diff : 0;
+    }
+    if (item.reminder_unit === 'кілометрів' && carLink) {
+      const mileage = await getPartMileage(carLink.tracker_id, item.date);
+      if (mileage != null) {
+        kmLeft = item.reminder_value - mileage;
+        kmLeft = kmLeft > 0 ? kmLeft : 0;
+        km = kmLeft;
+      } else {
+        km = '—';
+      }
+      if (kmLeft !== null && kmLeft > 0) {
+        const last30 = await getLast30DaysMileage(carLink.tracker_id);
+        if (last30 && last30 > 0) {
+          const avgPerDay = last30 / 30;
+          days = avgPerDay > 0 ? Math.floor(kmLeft / avgPerDay) : '—';
+        } else {
+          days = '—';
+        }
+      } else if (kmLeft === 0) {
+        days = 0;
+      } else {
+        days = '—';
+      }
+    }
+    tableBody.innerHTML += `
+      <tr>
+        <td>${item.car}</td>
+        <td>${item.part}</td>
+        <td style="text-align:center;">${days}</td>
+        <td style="text-align:center;">${km}</td>
+      </tr>
+    `;
+  }
+  if (latestReminders.length === 0) {
+    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Немає активних нагадувань</td></tr>`;
+  }
+}
+
+async function getLast30DaysMileage(tracker_id) {
+  const apiKey = 'S182743S365301';
+  const now = new Date();
+  const to = Math.floor(now.getTime() / 1000);
+  const from = Math.floor(new Date(now.getTime() - 30 * 24 * 3600 * 1000).getTime() / 1000);
+  return await getMileageMegaGPS(tracker_id, from, to);
+}
+// Получить пробег за период через MEGA-GPS (через сервер-прокси)
+async function getMileageMegaGPS(tracker_id, from, to) {
+  const apiKey = 'S182743S365301';
+  try {
+    const res = await fetch('/proxy/megagps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tracker_id, from, to, apiKey })
+    });
+    if (!res.ok) return null;
+    const text = await res.text();
+    // Ответ в формате CSV, ищем строку с km10
+    // Пример: id;km10;maxspeed;enginetime\n23647;1234;80;3600
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return null;
+    const fields = lines[1].split(';');
+    const km10 = parseInt(fields[1], 10);
+    return km10 / 10; // километры
+  } catch {
+    return null;
+  }
+}
+
+// Получить пробег с момента ремонта
+async function getPartMileage(tracker_id, repairDate) {
+  const fromDate = new Date(repairDate + 'T22:00:00');
+  const from = Math.floor(fromDate.getTime() / 1000);
+  const to = Math.floor(Date.now() / 1000);
+  return await getMileageMegaGPS(tracker_id, from, to);
+}
+
+// Вызовите после загрузки страницы
+document.addEventListener("DOMContentLoaded", () => {
+  renderRemindersTable();
+});
