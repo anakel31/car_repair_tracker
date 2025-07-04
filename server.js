@@ -4,10 +4,15 @@ const path = require('path');
 const cors = require('cors');
 
 const axios = require('axios');
+const { constants } = require('buffer');
 
 const app = express();
 const PORT = 3000;
 const DATA_FILE = path.join(__dirname, 'data.json');
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'login.html'));
+});
 
 // Разрешаем CORS для локального доступа
 app.use(cors());
@@ -84,22 +89,30 @@ app.post('/proxy/megagps', async (req, res) => {
 
 app.post('/proxy/wialon', async (req, res) => {
   try {
-    const { token, reportResourceId, reportTemplateId, reportObjectId, from, to } = req.body;
-    // Получить sid
-    const loginRes = await axios.post(
-      'https://wialon.gps-garant.com.ua/wialon/ajax.html',
-      `svc=token/login&params=${encodeURIComponent(JSON.stringify({ token }))}`,
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-    );
-    const sid = loginRes.data.eid;
+    const { sid: sidInit, token, reportResourceId, reportTemplateId, reportObjectId, from, to } = req.body;
+    let sid = sidInit;
+
+    // Если sid не передан — получить через token/login
+    if (!sid && token) {
+      const loginRes = await axios.post(
+        'https://hst-api.wialon.com/wialon/ajax.html',
+        `svc=token/login&params=${encodeURIComponent(JSON.stringify({ token }))}`,
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+      );
+      sid = loginRes.data.eid;
+      if (!sid) {
+        console.error('Wialon login error:', loginRes.data);
+        return res.status(500).send('Wialon login error');
+      }
+    }
+
     if (!sid) {
-      console.error('Wialon login error:', loginRes.data);
-      return res.status(500).send('Wialon login error');
+      return res.status(400).send('No sid or token provided');
     }
 
     // Выполнить отчёт
     const execReport = await axios.post(
-      'https://wialon.gps-garant.com.ua/wialon/ajax.html',
+      'https://hst-api.wialon.com/wialon/ajax.html',
       `svc=report/exec_report&params=${encodeURIComponent(JSON.stringify({
         reportResourceId,
         reportTemplateId,
@@ -116,7 +129,7 @@ app.post('/proxy/wialon', async (req, res) => {
 
     // Получить строки результата
     const getRows = await axios.post(
-      'https://wialon.gps-garant.com.ua/wialon/ajax.html',
+      'https://hst-api.wialon.com/wialon/ajax.html',
       `svc=report/get_result_rows&params=${encodeURIComponent(JSON.stringify({ tableIndex: 0, indexFrom: 0, indexTo: 0 }))}&sid=${sid}`,
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
@@ -124,9 +137,11 @@ app.post('/proxy/wialon', async (req, res) => {
       console.error('Wialon get_result_rows error:', getRows.data);
       return res.status(500).send('Wialon get_result_rows error');
     }
+   // console.log('Wialon proxy ответ:', getRows.data);
     res.json(getRows.data);
+
   } catch (e) {
-    console.error('Wialon proxy error:', e);
-    res.status(500).send('Wialon proxy error');
+    console.error('Wialon proxy error:', e?.response?.data || e);
+    res.status(500).send(e?.response?.data || 'Wialon proxy error');
   }
 });

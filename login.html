@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Вхід</title>
+  <style>
+    body { background: #f0f0f0; }
+    #login-box {
+      background: #fff; padding: 32px; border-radius: 8px;
+      box-shadow: 0 2px 12px #0002; width: 320px; margin: 100px auto;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    input { padding: 8px; font-size: 16px; }
+    button { padding: 8px; font-size: 16px; }
+    #login-error { color: red; display: none; }
+  </style>
+</head>
+<body>
+  <div id="login-box">
+  <h2>Вхід</h2>
+  <form id="login-form">
+    <input type="text" id="login-input" placeholder="Логін" autocomplete="username">
+    <input type="password" id="password-input" placeholder="Пароль" autocomplete="current-password">
+    <button type="submit">Увійти</button>
+    <div id="login-error">Невірний логін або пароль</div>
+  </form>
+</div>
+  <script src="script.js"></script>
+</body>
+</html>

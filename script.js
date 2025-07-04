@@ -1,4 +1,36 @@
 // --- ЗАГАЛЬНІ ФУНКЦІЇ --- //
+const WIALON_TOKEN = '783f97bc76ff1204b0d949403cdfcc556889EF1DDC767B4AC9DEDB4B392EF8AE66503E97';
+const WIALON_RESOURCE = 600909294;
+const WIALON_TEMPLATE = 1;
+const MEGA_GPS_API_KEY = "S182743S365301";
+
+const APP_LOGIN = "admin";
+const APP_PASSWORD = "12345";
+
+// Проверка авторизации на всех страницах, кроме login.html
+if (!window.location.pathname.endsWith("login.html") && sessionStorage.getItem('loggedIn') !== 'true') {
+  window.location.href = "login.html";
+}
+
+// Логика для login.html
+window.addEventListener('DOMContentLoaded', () => {
+  if (!window.location.pathname.endsWith("login.html")) return;
+  const form = document.getElementById('login-form');
+  const loginInput = document.getElementById('login-input');
+  const passInput = document.getElementById('password-input');
+  const errorDiv = document.getElementById('login-error');
+  if (!form || !loginInput || !passInput || !errorDiv) return;
+
+  form.onsubmit = e => {
+    e.preventDefault();
+    if (loginInput.value === APP_LOGIN && passInput.value === APP_PASSWORD) {
+      sessionStorage.setItem('loggedIn', 'true');
+      window.location.href = "index.html";
+    } else {
+      errorDiv.style.display = "block";
+    }
+  };
+});
 // --- Работа с локальным файлом (только для десктопа через Node.js/Electron) --- //
 
 async function universalReadJsonFile(apiUrl, fileUrl) {
@@ -105,6 +137,7 @@ async function renderRepairHistory() {
   }).join("");
 }
 
+// обработка index.html
 async function setupIndexPage() {
   await populateCarSelect();
   await renderRepairHistory();
@@ -126,19 +159,29 @@ async function setupIndexPage() {
   const unitLabel = document.getElementById("unit-label");
 
   function updateReminderVisibility() {
-    if (!partSelect || !reminderCheckbox || !reminderSettings || !unitLabel) return;
-    const selectedPart = partSelect.value;
-    const isChecked = reminderCheckbox.checked;
+  if (!partSelect || !reminderCheckbox || !reminderSettings || !unitLabel) return;
+  const selectedPart = partSelect.value;
+  const isChecked = reminderCheckbox.checked;
 
-    if (isChecked) {
-      reminderSettings.style.display = "block";
-      unitLabel.textContent = selectedPart === "Страховка" || selectedPart === "Технічний огляд"
-        ? "днів"
-        : "кілометрів";
+  if (isChecked) {
+    reminderSettings.style.display = "block";
+    if (
+      selectedPart === "Страховка" ||
+      selectedPart === "Технічний огляд" ||
+      selectedPart === "Тахограф"
+    ) {
+      unitLabel.textContent = "днів";
+      document.getElementById("reminder-date").style.display = "inline-block";
+      document.getElementById("reminder-value").style.display = "none";
     } else {
-      reminderSettings.style.display = "none";
+      unitLabel.textContent = "кілометрів";
+      document.getElementById("reminder-date").style.display = "none";
+      document.getElementById("reminder-value").style.display = "inline-block";
     }
+  } else {
+    reminderSettings.style.display = "none";
   }
+}
 
   if (reminderCheckbox && partSelect) {
     reminderCheckbox.addEventListener("change", updateReminderVisibility);
@@ -156,9 +199,16 @@ async function setupIndexPage() {
     const part = form["part"].value;
     const date = form["replace-date"].value;
     const reminder = form["reminder"].checked;
-    const reminder_value = form["reminder-value"] ? form["reminder-value"].value : "";
     const reminder_unit = document.getElementById("unit-label")?.textContent || "";
     const comment = form["comment"].value.trim();
+
+    // Новое:
+    const reminder_date = form["reminder-date"] ? form["reminder-date"].value : "";
+    // Новое для километров:
+    let reminder_value = "";
+    if (reminder && reminder_unit === "кілометрів") {
+      reminder_value = form["reminder-value"] ? Number(form["reminder-value"].value) : "";
+    }
 
     if (!car || !part || !date) {
       alert("Будь ласка, заповніть всі обов'язкові поля.");
@@ -171,10 +221,11 @@ async function setupIndexPage() {
       part,
       date,
       reminder,
-      reminder_value: reminder ? reminder_value : "",
       reminder_unit: reminder ? reminder_unit : "",
+      reminder_date: reminder ? reminder_date : "",
+      reminder_value: reminder ? reminder_value : "",
       comment
-    };
+  };
 
     // --- Новый блок: если есть предыдущая замена этой запчасти на этом авто ---
 const prev = history
@@ -189,26 +240,33 @@ if (prev) {
 
   // Считаем разницу в километрах (если есть привязка)
   const carLinks = await getCarLinks();
-  const carLink = carLinks.find(link => link.car === car && link.tracker_type === "mega-gps");
+  const carLink = carLinks.find(link => link.car === car);
   let kmPassed = null;
   if (carLink) {
-    kmPassed = await getMileageMegaGPS(
-      carLink.tracker_id,
-      Math.floor(prevDate.getTime() / 1000),
-      Math.floor(currDate.getTime() / 1000)
+    // Используем универсальную функцию для любого трекера
+    kmPassed = await getPartMileageUniversal(
+      carLink,
+      prev.date,
+      carLink.tracker_type === "wialon" ? {
+        token: WIALON_TOKEN,
+        reportResourceId: WIALON_RESOURCE,
+        reportTemplateId: WIALON_TEMPLATE,
+        reportObjectId: carLink.tracker_id
+      } : null,
+      currDate // до текущей даты замены
     );
   }
 
   // Добавляем к комментарию
   let addComment = `Попередня заміна: ${prev.date}. Пройдено ${daysPassed} дн.`;
-  if (kmPassed !== null) addComment += `, ${Math.round(kmPassed)} км.`;
-  newRepair.comment = (newRepair.comment ? newRepair.comment + " | " : "") + addComment;
+if (kmPassed !== null && !isNaN(kmPassed)) addComment += `, ${Math.round(kmPassed)} км.`;
+newRepair.comment = (newRepair.comment ? newRepair.comment + " | " : "") + addComment;
 }
 
     await setRepairHistory([...history, newRepair]);
-    await renderRepairHistory();
     form.reset();
   });
+  await renderRepairHistory();
 }
 
 // --- ФУНКЦІЇ ДЛЯ link.html --- //
@@ -309,6 +367,9 @@ async function setupHistoryPage() {
     showHistory(selectedCars);
   });
 
+  // При загрузке показываем все авто
+ // showHistory(links.map(link => link.car));
+
   function showHistory(selectedCars) {
     latestReplContainer.innerHTML = "";
     fullHistoryContainer.innerHTML = "";
@@ -323,25 +384,55 @@ async function setupHistoryPage() {
       }
     });
 
-    latestReplContainer.innerHTML = Object.values(latestByCarPart).map(item => `
-      <div style="border:1px solid #aaa; padding:10px; margin-bottom:10px;">
-        🚗 <strong>${item.car}</strong><br>
-        🔧 <strong>${item.part}</strong><br>
-        📅 Дата заміни: ${item.date}<br>
-        🔁 Нагадування: ${item.reminder ? `через ${item.reminder_value} ${item.reminder_unit}` : "Ні"}<br>
-        💬 Коментар: ${item.comment || "<i>немає</i>"}
-      </div>
-    `).join("") || "<p>Немає даних.</p>";
+    latestReplContainer.innerHTML = Object.values(latestByCarPart).map(item => {
+      let reminderText = "Ні";
+      if (item.reminder) {
+        if (item.reminder_unit === "днів" && item.reminder_date) {
+          const now = new Date();
+          const target = new Date(item.reminder_date + 'T23:59:59');
+          const diff = Math.ceil((target.getTime() - now.getTime()) / (24 * 3600 * 1000));
+          reminderText = diff > 0
+            ? `через ${diff} днів`
+            : "нагадування прострочене";
+        } else if (item.reminder_unit === "кілометрів" && item.reminder_value) {
+          reminderText = `через ${item.reminder_value} кілометрів`;
+        }
+      }
+      return `
+        <div style="border:1px solid #aaa; padding:10px; margin-bottom:10px;">
+          🚗 <strong>${item.car}</strong><br>
+          🔧 <strong>${item.part}</strong><br>
+          📅 Дата заміни: ${item.date}<br>
+          🔁 Нагадування: ${reminderText}<br>
+          💬 Коментар: ${item.comment || "<i>немає</i>"}
+        </div>
+      `;
+    }).join("") || "<p>Немає даних.</p>";
 
     const sorted = filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    fullHistoryContainer.innerHTML = sorted.map(item => `
-      <div style="border:1px solid #ccc; padding:8px; margin-bottom:8px;">
-        <strong>${item.date}</strong> — ${item.car} — ${item.part}<br>
-        🔁 ${item.reminder ? `Нагадати через ${item.reminder_value} ${item.reminder_unit}` : "Без нагадування"}<br>
-        💬 ${item.comment || "<i>немає коментаря</i>"}
-      </div>
-    `).join("") || "<p>Немає записів.</p>";
+    fullHistoryContainer.innerHTML = sorted.map(item => {
+      let reminderText = "Без нагадування";
+      if (item.reminder) {
+        if (item.reminder_unit === "днів" && item.reminder_date) {
+          const now = new Date();
+          const target = new Date(item.reminder_date + 'T23:59:59');
+          const diff = Math.ceil((target.getTime() - now.getTime()) / (24 * 3600 * 1000));
+          reminderText = diff > 0
+            ? `Нагадати через ${diff} днів`
+            : "Нагадування прострочене";
+        } else if (item.reminder_unit === "кілометрів" && item.reminder_value) {
+          reminderText = `Нагадати через ${item.reminder_value} кілометрів`;
+        }
+      }
+      return `
+        <div style="border:1px solid #ccc; padding:8px; margin-bottom:8px;">
+          <strong>${item.date}</strong> — ${item.car} — ${item.part}<br>
+          🔁 ${reminderText}<br>
+          💬 ${item.comment || "<i>немає коментаря</i>"}
+        </div>
+      `;
+    }).join("") || "<p>Немає записів.</p>";
   }
 }
 
@@ -371,20 +462,24 @@ async function renderRemindersTable() {
     let days = '';
     let km = '';
     let kmLeft = null;
-    if (item.reminder_unit === 'днів') {
-      const repairDate = new Date(item.date + 'T22:00:00');
+
+    if (item.reminder_unit === 'днів' && item.reminder_date) {
       const now = new Date();
-      const diff = Math.ceil((repairDate.getTime() + item.reminder_value * 24 * 3600 * 1000 - now.getTime()) / (24 * 3600 * 1000));
+      const target = new Date(item.reminder_date + 'T23:59:59');
+      const diff = Math.ceil((target.getTime() - now.getTime()) / (24 * 3600 * 1000));
       days = diff > 0 ? diff : 0;
+      if (days > 30) continue; // фильтр по дням
     }
+
     if (item.reminder_unit === 'кілометрів' && carLink) {
       const wialonParams = carLink.tracker_type === "wialon" ? {
-       token: '783f97bc76ff1204b0d949403cdfcc55168DC39DA6503C88CD20280AF26297B9DF66A46B',
-       reportResourceId: 123456,
-       reportTemplateId: 1,
-       reportObjectId: carLink.tracker_id
-    } : null;
-    const mileage = await getPartMileageUniversal(carLink, item.date, wialonParams);
+        token: WIALON_TOKEN,
+        reportResourceId: WIALON_RESOURCE,
+        reportTemplateId: WIALON_TEMPLATE,
+        reportObjectId: carLink.tracker_id
+      } : null;
+      const mileage = await getPartMileageUniversal(carLink, item.date, wialonParams);
+
       if (mileage != null) {
         kmLeft = item.reminder_value - mileage;
         kmLeft = kmLeft > 0 ? kmLeft : 0;
@@ -393,7 +488,7 @@ async function renderRemindersTable() {
         km = '—';
       }
       if (kmLeft !== null && kmLeft > 0) {
-        const last30 = await getLast30DaysMileage(carLink.tracker_id);
+        const last30 = await getLast30DaysMileage(carLink, wialonParams);
         if (last30 && last30 > 0) {
           const avgPerDay = last30 / 30;
           days = avgPerDay > 0 ? Math.floor(kmLeft / avgPerDay) : '—';
@@ -405,7 +500,9 @@ async function renderRemindersTable() {
       } else {
         days = '—';
       }
+      if (typeof days === 'number' && days > 30) continue; // фильтр по дням
     }
+
     tableBody.innerHTML += `
       <tr>
         <td>${item.car}</td>
@@ -420,34 +517,26 @@ async function renderRemindersTable() {
   }
 }
 
-async function getLast30DaysMileage(tracker_id) {
-  const apiKey = 'S182743S365301';
+
+async function getLast30DaysMileage(carLink, wialonParams) {
   const now = new Date();
   const to = Math.floor(now.getTime() / 1000);
   const from = Math.floor(new Date(now.getTime() - 30 * 24 * 3600 * 1000).getTime() / 1000);
-  return await getMileageMegaGPS(tracker_id, from, to);
-}
-// Получить пробег за период через MEGA-GPS (через сервер-прокси)
-async function getMileageMegaGPS(tracker_id, from, to) {
-  const apiKey = 'S182743S365301';
-  try {
-    const res = await fetch('/proxy/megagps', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tracker_id, from, to, apiKey })
-    });
-    if (!res.ok) return null;
-    const text = await res.text();
-    // Ответ в формате CSV, ищем строку с km10
-    // Пример: id;km10;maxspeed;enginetime\n23647;1234;80;3600
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return null;
-    const fields = lines[1].split(';');
-    const km10 = parseInt(fields[1], 10);
-    return km10 / 10; // километры
-  } catch {
-    return null;
+
+  if (carLink.tracker_type === "mega-gps") {
+    return await getMileageMegaGPS(carLink.tracker_id, from, to);
   }
+  if (carLink.tracker_type === "wialon" && wialonParams) {
+  return await getMileageWialonByProxy(
+    wialonParams.token,
+    wialonParams.reportResourceId,
+    wialonParams.reportTemplateId,
+    wialonParams.reportObjectId,
+    from,
+    to
+  );
+  }
+  return null;
 }
 
 // Получить пробег с момента ремонта
@@ -463,12 +552,12 @@ async function getPartMileageUniversal(carLink, repairDate, wialonParams) {
   const fromDate = new Date(repairDate + 'T22:00:00');
   const from = Math.floor(fromDate.getTime() / 1000);
   const to = Math.floor(Date.now() / 1000);
-
+  
   if (carLink.tracker_type === "mega-gps") {
     return await getMileageMegaGPS(carLink.tracker_id, from, to);
   }
   if (carLink.tracker_type === "wialon" && wialonParams) {
-  return await getMileageWialon(
+  return await getMileageWialonByProxy(
     wialonParams.token,
     wialonParams.reportResourceId,
     wialonParams.reportTemplateId,
@@ -480,23 +569,8 @@ async function getPartMileageUniversal(carLink, repairDate, wialonParams) {
   return null;
 }
 
-// Получить sid по токену Wialon (автоматизация)
-async function getWialonSid(token) {
-  try {
-    const res = await fetch('https://wialon.gps-garant.com.ua/wialon/ajax.html', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `svc=token/login&params=${encodeURIComponent(JSON.stringify({ token }))}`
-    });
-    const data = await res.json();
-    return data.eid || null;
-  } catch {
-    return null;
-  }
-}
-
-// Получить пробег через Wialon (через сервер-прокси)
-async function getMileageWialon(token, reportResourceId, reportTemplateId, reportObjectId, from, to) {
+// Получить пробег за период через Wialon (через сервер-прокси)
+async function getMileageWialonByProxy(token, reportResourceId, reportTemplateId, reportObjectId, from, to) {
   try {
     const res = await fetch('/proxy/wialon', {
       method: 'POST',
@@ -505,8 +579,57 @@ async function getMileageWialon(token, reportResourceId, reportTemplateId, repor
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return data.rows && data.rows[0] ? Number(data.rows[0].c[3]) : null; // c[3] — зависит от шаблона
+    //console.log('Wialon response:', data);
+
+    // Исправлено: data — это массив
+    const row = Array.isArray(data) ? data[0] : (data.rows && data.rows[0]);
+    if (row && row.c && row.c[4]) {
+      const kmStr = row.c[4];
+      const km = parseFloat(kmStr.replace(',', '.'));
+      return isNaN(km) ? null : km;
+    }
+    return null;
   } catch {
+    return null;
+  }
+}
+
+async function getMileageMegaGPS(tracker_id, from, to) {
+  try {
+    const res = await fetch('/proxy/megagps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tracker_id,
+        from,
+        to,
+        apiKey: MEGA_GPS_API_KEY // <-- только так!
+      })
+    });
+    const text = await res.text();
+    console.log('MegaGPS raw response:', text);
+
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) {
+      console.log('MegaGPS: нет данных');
+      return null;
+    }
+    const header = lines[0].split(';');
+    const idxId = header.indexOf('id');
+    const idxKm = header.indexOf('km10');
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(';');
+      if (cols[idxId] === String(tracker_id)) {
+        const km10 = parseFloat(cols[idxKm].replace(',', '.'));
+        const km = isNaN(km10) ? null : km10 / 10;
+        console.log(`MegaGPS: пробег за период = ${km} км`);
+        return km;
+      }
+    }
+    return null;
+  } catch (e) {
+    console.log('MegaGPS ошибка:', e);
     return null;
   }
 }

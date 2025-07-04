@@ -5,6 +5,7 @@
   <title>Відстеження ремонту авто</title>
 </head>
 <body>
+
   <h1>Відстеження ремонту авто</h1>
 
   <a href="link.html">
@@ -49,6 +50,7 @@
       <option value="Антифриз">Антифриз</option>
       <option value="Гальмівна рідина">Гальмівна рідина</option>
       <option value="Повітряний фільтр">Повітряний фільтр</option>
+      <option value="Тахограф">Тахограф</option>
     </select>
     <br><br>
 
@@ -65,11 +67,9 @@
     <br><br>
 
     <div id="reminder-settings" style="display: none;">
-    <label id="reminder-label" for="reminder-value">
-      Через скільки <span id="unit-label">кілометрів</span> нагадати:
-    </label><br>
-    <input type="number" id="reminder-value" name="reminder-value" min="1" />
-    <br><br>
+    <input type="number" id="reminder-value" style="display:none;">
+    <input type="date" id="reminder-date" style="display:none;">
+<span id="unit-label"></span>
   </div>
 
     <label for="comment">Коментар (необов’язково):</label><br>
