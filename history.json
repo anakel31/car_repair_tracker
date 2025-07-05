@@ -1,0 +1,162 @@
+[
+  {
+    "car": "4254",
+    "part": "Масло двигун",
+    "date": "2025-03-01",
+    "reminder": true,
+    "reminder_unit": "кілометрів",
+    "reminder_date": "",
+    "reminder_value": 30000,
+    "comment": ""
+  },
+  {
+    "car": "4254",
+    "part": "Страховка",
+    "date": "2025-05-01",
+    "reminder": true,
+    "reminder_unit": "днів",
+    "reminder_date": "2025-07-09",
+    "reminder_value": "",
+    "comment": ""
+  },
+  {
+    "car": "4254",
+    "part": "Тахограф",
+    "date": "2025-05-16",
+    "reminder": true,
+    "reminder_unit": "днів",
+    "reminder_date": "2025-07-18",
+    "reminder_value": "",
+    "comment": ""
+  },
+  {
+    "car": "4254",
+    "part": "Ходова частина зад",
+    "date": "2025-05-10",
+    "reminder": true,
+    "reminder_unit": "кілометрів",
+    "reminder_date": "",
+    "reminder_value": 15000,
+    "comment": ""
+  },
+  {
+    "car": "4254",
+    "part": "Масло двигун",
+    "date": "2025-07-01",
+    "reminder": true,
+    "reminder_unit": "кілометрів",
+    "reminder_date": "",
+    "reminder_value": 2000,
+    "comment": "Попередня заміна: 2025-03-01. Пройдено 122 дн., 18920 км."
+  },
+  {
+    "car": "2271",
+    "part": "Масло двигун",
+    "date": "2025-03-01",
+    "reminder": true,
+    "reminder_unit": "кілометрів",
+    "reminder_date": "",
+    "reminder_value": 30000,
+    "comment": ""
+  },
+  {
+    "car": "2271",
+    "part": "Страховка",
+    "date": "2025-05-01",
+    "reminder": true,
+    "reminder_unit": "днів",
+    "reminder_date": "2025-07-09",
+    "reminder_value": "",
+    "comment": ""
+  },
+  {
+    "car": "2271",
+    "part": "Тахограф",
+    "date": "2025-05-16",
+    "reminder": true,
+    "reminder_unit": "днів",
+    "reminder_date": "2025-07-18",
+    "reminder_value": "",
+    "comment": ""
+  },
+  {
+    "car": "2271",
+    "part": "Ходова частина зад",
+    "date": "2025-05-10",
+    "reminder": true,
+    "reminder_unit": "кілометрів",
+    "reminder_date": "",
+    "reminder_value": 15000,
+    "comment": ""
+  },
+  {
+    "car": "2271",
+    "part": "Масло двигун",
+    "date": "2025-07-01",
+    "reminder": true,
+    "reminder_unit": "кілометрів",
+    "reminder_date": "",
+    "reminder_value": 2000,
+    "comment": "Попередня заміна: 2025-03-01. Пройдено 122 дн., 18920 км."
+  },
+  {
+    "car": "8353",
+    "part": "Страховка",
+    "date": "2025-07-02",
+    "reminder": true,
+    "reminder_unit": "днів",
+    "reminder_date": "2025-07-06",
+    "reminder_value": "",
+    "comment": "fdee"
+  },
+  {
+    "car": "4573",
+    "part": "Пневмоподушка",
+    "date": "2025-07-01",
+    "reminder": false,
+    "reminder_unit": "",
+    "reminder_date": "",
+    "reminder_value": "",
+    "comment": ""
+  },
+  {
+    "car": "3646",
+    "part": "Масло двигун",
+    "date": "2025-07-01",
+    "reminder": false,
+    "reminder_unit": "",
+    "reminder_date": "",
+    "reminder_value": "",
+    "comment": ""
+  },
+  {
+    "car": "4254",
+    "part": "Масло двигун",
+    "date": "2025-07-04",
+    "reminder": true,
+    "reminder_unit": "кілометрів",
+    "reminder_date": "",
+    "reminder_value": 1000,
+    "comment": "Попередня заміна: 2025-07-01. Пройдено 3 дн., 213 км."
+  },
+  {
+    "car": "4254",
+    "part": "Ліва",
+    "date": "2025-06-01",
+    "reminder": false,
+    "reminder_unit": "",
+    "reminder_date": "",
+    "reminder_value": "",
+    "comment": ""
+  },
+  {
+    "car": "4254",
+    "part": "Гальмівна рідина",
+    "date": "2025-06-30",
+    "reminder": false,
+    "reminder_unit": "",
+    "reminder_date": "",
+    "reminder_value": "",
+    "comment": ""
+  }
+]

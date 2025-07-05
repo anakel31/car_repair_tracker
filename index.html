@@ -34,25 +34,26 @@
     <select id="part-select" name="part" required>
       <option value="">-- Оберіть запчастину --</option>
       <option value="Масло двигун">Масло двигун</option>
-      <option value="Технічний огляд">Технічний огляд</option>
-      <option value="Страховка">Страховка</option>
-      <option value="Тормозні колодки">Тормозні колодки</option>
-      <option value="Амортизатори">Амортизатори</option>
-      <option value="Рессори/Подушки">Рессори/Подушки</option>
-      <option value="Фари">Фари</option>
-      <option value="Ходова частина перед">Ходова частина перед</option>
-      <option value="Ходова частина зад">Ходова частина зад</option>
-      <option value="Електроніка">Електроніка</option>
       <option value="Аккумулятор">Аккумулятор</option>
-      <option value="Ремонт гідроборт">Ремонт гідроборт</option>
       <option value="Масло коробка">Масло коробка</option>
       <option value="Масло мост">Масло мост</option>
+      <option value="Ходова частина перед">Ходова частина перед</option>
+      <option value="Ходова частина зад">Ходова частина зад</option>
+      <option value="Гідроборт">Гідроборт</option>
+      <option value="Електроніка освітлення">Електроніка освітлення</option>
       <option value="Антифриз">Антифриз</option>
       <option value="Гальмівна рідина">Гальмівна рідина</option>
       <option value="Повітряний фільтр">Повітряний фільтр</option>
+      <option value="Технічний огляд">Технічний огляд</option>
+      <option value="Страховка">Страховка</option>
       <option value="Тахограф">Тахограф</option>
     </select>
     <br><br>
+
+    <div id="subpart-container" style="display:none; margin: 8px 0;">
+  <label for="subpart-select">Підвид:</label>
+  <select id="subpart-select"></select>
+</div>
 
     <label for="replace-date">Дата заміни:</label>
   <input type="date" id="replace-date" name="replace-date" />
@@ -78,6 +79,22 @@
 
     <button type="submit">Зберегти</button>
   </form>
+  
+  <div id="save-status" style="
+    display:none;
+    position:fixed;
+    left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    background:rgba(0,0,0,0.85);
+    color:#fff;
+    padding:32px 48px;
+    border-radius:12px;
+    font-size:2rem;
+    z-index:9999;
+    text-align:center;
+    pointer-events:none;
+    ">
+  </div>
 
   <hr>
 <div id="reminders-panel" style="position: absolute; top: 20px; right: 20px; width: 420px; background: #f8f8f8; border: 1px solid #ccc; padding: 16px;">
